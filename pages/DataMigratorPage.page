@@ -45,7 +45,6 @@
                     jsonObject.records.push(parentObject);
                 });
                 jsonString = JSON.stringify(jsonObject);
-                console.log('Final String ::: '+jsonString);
                 passStringToController(jsonString);
             } else {
                 console.log(event.message);
