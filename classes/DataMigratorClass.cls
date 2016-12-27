@@ -1,5 +1,3 @@
-/*Comments
-Another comment*/
 
 public class DataMigratorClass {
 
