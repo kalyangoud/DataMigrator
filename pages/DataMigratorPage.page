@@ -1,0 +1,162 @@
+<apex:page controller="DataMigratorClass">
+    
+    <style>
+        .prerequisitesData{
+            padding-left: 5%;
+            padding-bottom: 2px;
+            padding-top: 2px;
+        }
+        
+        .prerequisitesItem{
+            padding-left: 5%;
+            padding-bottom: 2px;
+            padding-top: 2px;
+        }
+        
+    </style>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script type="text/javascript">
+        function getRecords(objMapString,parentObjectName,objFieldMap,queryString){
+        var jsonString;
+        var objMap = JSON.parse(objMapString); 
+        DataMigratorClass.searchRecords(queryString, function(results, event) {
+            if (event.type === 'exception') {
+                console.log("exception");
+                console.log(event);
+            } else if (event.status) {
+                var jsonObject = {
+                    records :[]
+                };
+                $.each(results, function(i, result) {
+                    var parentObject = {
+                        attributes : {}
+                    };
+                    parentObject.attributes["type"] = parentObjectName;
+                    parentObject.attributes["referenceId"] = "ref"+i;
+                    
+                    for( var prop in result){
+                        if(result[prop].constructor == Array){                           
+                            parentObject[prop] = childObject(result[prop],i, objMap[prop], objFieldMap, prop);
+                        } else if(prop != 'Id'){
+                            parentObject[prop] = result[prop]; 
+                        }    
+                        
+                    }
+                    jsonObject.records.push(parentObject);
+                });
+                jsonString = JSON.stringify(jsonObject);
+                console.log('Final String ::: '+jsonString);
+                passStringToController(jsonString);
+            } else {
+                console.log(event.message);
+            }
+        });
+        
+    }
+    
+    function childObject(childRecords, j, childObjName, objFieldMap, relName){
+        var objField = JSON.parse(objFieldMap);
+        var jsonObject = {
+            records :[]
+        };
+        $.each(childRecords, function(i, result) {
+            var childObject = {
+                attributes : {}
+            };
+            childObject.attributes["type"] = childObjName;
+            childObject.attributes["referenceId"] = j+childObjName+i;
+            
+            for( var prop in result){
+                if(prop != objField[relName] && prop != 'Id'){
+                    childObject[prop] = result[prop]
+                }                
+            }
+            jsonObject.records.push(childObject);
+        });
+        return jsonObject;
+    }
+    </script>
+    <apex:pageMessages id="msg"/>
+    <apex:actionstatus id="counterStatus">
+        <apex:facet name="start">
+            <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb; height:100%;opacity:0.65;width:100%;">
+                <div class="waitingHolder" style="top: 100px; width: 91px;">
+                <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                <span class="waitingDescription">Loading...</span>
+                </div>
+            </div>
+        </apex:facet>
+    </apex:actionstatus>
+    <apex:form >
+        <apex:actionFunction name="passStringToController" action="{!moveRecords}" rerender="output" >
+            <apex:param name="jsonString" value="" assignTo="{!jsonString}" />
+        </apex:actionFunction>
+        <apex:pageBlock title="Data Migrator" id="mainPB" tabStyle="Contact">
+            <div>
+                <h1>
+                    Prerequisites : 
+                </h1>
+                <p>
+                    <div class="prerequisitesItem">
+                        1) Make sure api names in the query(Objects, Fields and Relationship names) between the two orgs are same
+                    </div>
+                    <div class="prerequisitesItem">
+                        2) Add the following in Remote Site Settings<br/>
+                        <div class="prerequisitesData">
+                            "login.salesforce.com" for Dev and Prod Org<br/>                              
+                        </div>
+                        <div class="prerequisitesData">
+                            (OR)
+                        </div>
+                        <div class="prerequisitesData">
+                            "test.salesforce.com" for Sandbox<br/>                              
+                        </div>
+                        <div class="prerequisitesData">
+                            (AND)
+                        </div>
+                        <div class="prerequisitesData">
+                            "instanceurl.salesforce.com" for eg (ap2.salesforce.com or mydomian.salesforce.com)<br/>                          
+                        </div>
+                    </div>
+                    <div class="prerequisitesItem">
+                        3) Select the Domain<br/>
+                    </div>
+                    <div class="prerequisitesItem">
+                        4) Enter Username and password(including security token)
+                    </div>                                       
+                </p>                 
+            </div>            
+            <apex:pageBlockSection columns="5" title="Login to Salesforce Org" collapsible="false" >
+                <apex:outputLabel >Domain</apex:outputLabel>
+                <apex:outputLabel >Username</apex:outputLabel>
+                <apex:outputLabel >Password</apex:outputLabel>
+                <apex:outputLabel ></apex:outputLabel>
+                <apex:outputLabel ></apex:outputLabel>
+                <apex:pageBlockSectionItem >
+                    <apex:selectList value="{!selectedDomain}" multiselect="false" size="1">
+                        <apex:selectOption itemValue="test" itemLabel="test"/>
+                        <apex:selectOption itemValue="login" itemLabel="login"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:inputText value="{!userName}" label="User Name"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:inputText value="{!password}" label="Password"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem >
+                    <apex:commandButton value="Login to Org" action="{!orgLogin}" reRender="msg" status="counterStatus"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection columns="1" title="Query Editor" collapsible="false">
+                <apex:pageBlockSectionItem >
+                    <apex:inputTextarea id="queryVal" value="{!queryString}" cols="10" rows="3" style="width: 100%"/>
+                </apex:pageBlockSectionItem>
+                <apex:commandButton value="Call Remote Action" action="{!schemaCheck}" status="counterStatus" oncomplete="getRecords('{!objRelNameMapJSON}','{!parentObjectName}','{!objFieldMapJSON}','{!queryString}');"/>
+            </apex:pageBlockSection>            
+        </apex:pageBlock>
+        <apex:pageBlock title="Output" id="output">
+            {!responseBody}
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

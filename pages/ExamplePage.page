@@ -1,0 +1,5 @@
+<apex:page controller="ExampleController">
+    <apex:form >
+        <c:VisualForceComponent InputString="Test string" inputList_string="{!Country_List}" InputList_sObje="{!Account_List}" />
+    </apex:form>
+</apex:page>

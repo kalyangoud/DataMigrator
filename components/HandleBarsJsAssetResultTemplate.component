@@ -1,0 +1,21 @@
+<apex:component layout="none">
+    <ul class="search-results">
+        <!-- use the '.' character to iterate over the top level list -->
+        {{#each .}}
+        <li class="search-result">
+            <a href="/{{this.Id}}">
+                {{this.Name}} - 
+                <!-- print Product2 information if it exists -->
+                {{#if this.Product2}}
+                {{this.Product2.ProductCode}}
+                {{else}}
+                No associated Product2
+                {{/if}}
+            </a>
+        </li>
+        <!-- fallback if no results -->
+        {{else}}
+        <li class="search-result no-results">No Results</li>
+        {{/each}}
+    </ul>
+</apex:component>
