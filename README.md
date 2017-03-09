@@ -1,0 +1,3 @@
+There are cases when we want to move master data from one instance to other . We can use Data Loader to move records, but to move multiple object records which has relationship between them, we need to export master records and then load child records using External-Ids or some other ways. This code helps in moving records easily by just running a soql query like "SELECT Name, (SELECT Name FROM Contacts) FROM Account" 
+
+It too has limit which can transfer only 200 records. And FieldAPI Names mentioned in the query should be same. Entire concept is based on sObject Tree, for more visit https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_composite_sobject_tree_create.htm
